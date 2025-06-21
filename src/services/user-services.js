@@ -20,6 +20,38 @@ async function createUser(data) {
         );  
     }
 }   
+async function signin(data){
+    try {
+        const user = await userRepository.getUserByEmail(data.email);
+        const isPasswordValid = await userRepository.verifyPassword(
+            data.password,
+            user.password
+        );
+        if (!isPasswordValid) {
+            throw new AppError(
+                'Invalid credentials',
+                StatusCodes.UNAUTHORIZED
+            );
+        }
+        const jwt = await userRepository.createToken({
+            id: user.id,
+            email: user.email,
+        });
+        return jwt;
+        
+    } catch (error) {
+        console.log(error);
+         if (error instanceof AppError) {
+            throw error;
+        }
+        throw new AppError(
+            'Something went wrong while signing in',
+            StatusCodes.INTERNAL_SERVER_ERROR
+        );  
+    }
+}
+
 module.exports = {
     createUser,
+    signin
 };
