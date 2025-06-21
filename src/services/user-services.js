@@ -37,8 +37,9 @@ async function signin(data){
             id: user.id,
             email: user.email,
         });
+        console.log(jwt);
         return jwt;
-        
+
     } catch (error) {
         console.log(error);
          if (error instanceof AppError) {
@@ -50,8 +51,47 @@ async function signin(data){
         );  
     }
 }
-
+async function isAuthenticated(token) {
+    try {
+        if (!token) {
+            throw new AppError(
+                'Token is required for authentication',
+                StatusCodes.BAD_REQUEST
+            );
+        }
+        const user = await userRepository.verifyToken(token);
+        const response = await userRepository.get(user.id);
+        if (!response) {
+            throw new AppError(
+                'User not found',
+                StatusCodes.NOT_FOUND
+            );
+        }
+        return response.id;
+    } catch (error) {
+        if (error instanceof AppError) {
+            throw error;
+        }
+        if(error.name === 'JsonWebTokenError') {
+            throw new AppError(
+                'Invalid token',
+                StatusCodes.UNAUTHORIZED
+            );
+        }
+        if(error.name === 'TokenExpiredError') {
+            throw new AppError(
+                'Token has expired',
+                StatusCodes.UNAUTHORIZED
+            );
+        }
+        throw new AppError(
+            'Something went wrong while verifying token',
+            StatusCodes.INTERNAL_SERVER_ERROR
+        );
+    }
+}
 module.exports = {
     createUser,
-    signin
+    signin,
+    isAuthenticated
 };
